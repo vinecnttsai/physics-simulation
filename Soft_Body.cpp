@@ -6,16 +6,23 @@
 #include <SFML/Graphics.hpp>
 using namespace std;
 using namespace sf;
-const int pixel=1500,wid=10,height=10,particle_amount=wid*height,ks,kd,l0,mask[9][8]={{0,0,0,1,1,1,0,0},{1,1,0,0,0,0,0,1},{0,0,0,0,0,1,1,1},{0,1,1,1,0,0,0,0},{1,1,1,0,0,0,0,0},{0,0,0,0,1,1,1,0},{0,0,1,1,1,0,0,0},{1,0,0,0,0,0,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={pixel/2,pixel/2},ob_num=4,radius;
-const double delta_t=0.1;
+const int pixel=1500,wid=10,height=10,particle_amount=wid*height,ks,kd,l0,mask[9][8]={{0,0,0,1,1,1,0,0},{1,1,0,0,0,0,0,1},{0,0,0,0,0,1,1,1},{0,1,1,1,0,0,0,0},{1,1,1,0,0,0,0,0},{0,0,0,0,1,1,1,0},{0,0,1,1,1,0,0,0},{1,0,0,0,0,0,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={pixel/2,pixel/2},ob_num=4,radius=0.3,r=1.0;
+const double delta_t=0.1,g=-9.8;
 RenderWindow window(VideoMode(pixel, pixel), "Fluid Simulation");
 CircleShape circle;
 class particle
 {
     public:
+        particle();
         double pos[2],F[2],mass,velocity[2];
         void update();
 };
+particle::particle()
+{
+    velocity[0]=0;
+    velocity[1]=0;
+    mass=1;
+}
 void particle::update()
 {
     for(int j=0;j<2;j++)
@@ -141,6 +148,7 @@ void spring_mass_model()
                 for(int j=0;j<2;j++)
                 {
                     p[i].F[j]=hooke(p[A].pos[j], p[B].pos[j])+damping;
+                    if(j)p[i].F[j]+=g;
                 }
             }
         }
@@ -171,8 +179,13 @@ void spring_mass_model()
 }
 int main()
 {
-    circle.setRadius();
+    circle.setRadius(radius);
     circle.setFillColor(Color::Blue);
+    for(int i=0;i<particle_amount;i++)
+    {
+        p[i].pos[0]=pixel/5+i%wid*r;
+        p[i].pos[1]=pixel/5+i/wid*r;
+    }
     while (window.isOpen())
     {
         Event event;
