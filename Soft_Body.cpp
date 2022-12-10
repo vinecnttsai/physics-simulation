@@ -6,8 +6,8 @@
 #include <SFML/Graphics.hpp>
 using namespace std;
 using namespace sf;
-const int pixel=1500,wid=10,height=10,particle_amount=wid*height,ks,kd,l0,mask[9][8]={{0,0,0,1,1,1,0,0},{1,1,0,0,0,0,0,1},{0,0,0,0,0,1,1,1},{0,1,1,1,0,0,0,0},{1,1,1,0,0,0,0,0},{0,0,0,0,1,1,1,0},{0,0,1,1,1,0,0,0},{1,0,0,0,0,0,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={pixel/2,pixel/2},ob_num=4,radius=0.3,r=1.0;
-const double delta_t=0.1,g=-9.8;
+const int pixel=1500,wid=10,height=10,particle_amount=wid*height,ks=0.5,kd=0.5,mask[9][8]={{0,0,0,1,1,1,0,0},{1,1,0,0,0,0,0,1},{0,0,0,0,0,1,1,1},{0,1,1,1,0,0,0,0},{1,1,1,0,0,0,0,0},{0,0,0,0,1,1,1,0},{0,0,1,1,1,0,0,0},{1,0,0,0,0,0,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={pixel/2,pixel/2},ob_num=4;
+const double delta_t=0.1,g=-9.8,radius=0.3,r=1.0,L01=1.0,L02=sqrt(2);
 RenderWindow window(VideoMode(pixel, pixel), "Fluid Simulation");
 CircleShape circle;
 class particle
@@ -90,9 +90,10 @@ int collision(int point)
     }
     return 0;
 }
-double hooke(double posa,double posb)
+double hooke(double posa,double posb,int type)
 {
-    return ks*(abs(posa-posb)-l0);
+    if(!type)return ks*(abs(posa-posb)-L01);
+    else return ks*(abs(posa-posb)-L02);
 }
 void ob_line(int x1,int y1,int x2,int y2,int lebal,int line_num)
 {
@@ -142,12 +143,12 @@ void spring_mass_model()
         {
             if(mask[mask_num][k])
             {
-                int A=i,B=i+mask_pos[k][0]+mask_pos[k][1]*height;
+                int A=i,B=i+mask_pos[k][0]+mask_pos[k][1]*height,type=abs(mask_pos[k][0]-p[i].pos[0])+abs(mask_pos[k][1]-p[i].pos[1])-1;
                 int damping,rx=p[B].pos[0]-p[A].pos[0],ry=p[B].pos[1]-p[A].pos[1],vx=p[B].velocity[0]-p[A].velocity[0],vy=p[B].velocity[1]-p[A].velocity[1];
                 damping=kd*(rx*vx+ry*vy)/dis(A,B);
                 for(int j=0;j<2;j++)
                 {
-                    p[i].F[j]=hooke(p[A].pos[j], p[B].pos[j])+damping;
+                    p[i].F[j]=hooke(p[A].pos[j], p[B].pos[j],type)+damping;
                     if(j)p[i].F[j]+=g;
                 }
             }
