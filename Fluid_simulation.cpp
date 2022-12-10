@@ -7,9 +7,9 @@
 using namespace std;
 using namespace sf;
 const int pixel=1500,b_up=pixel,b_bottom=0,b_left=0,b_right=pixel,particlerange=pixel/2,particle_amount=20*20;
-const double mu=0.5,damp=-0.5,g=-9.8,K=1.0,rho0=1.0,radius=5.0,m=radius*0.15,H=2.5*radius;
+const double mu=0.0,damp=-0.5,g=-10,K=1.0,rho0=10,radius=10.0,m=pi*pow(radius,2)*rho0,H=3*radius,initial_dis=sqrt(pi*pow(radius,2)),delta_t=0.001;
 const double normalize=(45.0*m)/(pi*pow(H,6));
-RenderWindow window(VideoMode(pixel, pixel), "Fluid Simulation");
+RenderWindow window(VideoMode(pixel+radius*2, pixel+radius*2), "Fluid Simulation");
 CircleShape circle;
 class value
 {
@@ -51,7 +51,7 @@ void draw()
     {
         for(int j=0;j<2;j++)
         {
-            circle.setPosition(group[i].v[0].pos+2*radius,1500-group[i].v[1].pos-2*radius);
+            circle.setPosition(group[i].v[0].pos,1500-group[i].v[1].pos);
             window.draw(circle);
         }
     }
@@ -66,9 +66,12 @@ void range()
             if(i!=k)
             {
                 particle temp=group[i],temp2=group[k];
-                if(sqrt(pow(temp.v[0].pos-temp2.v[0].pos,2)+pow(temp.v[1].pos-temp2.v[1].pos,2))<H)
+                if(abs(temp.v[0].pos-temp2.v[0].pos)<=H&&abs(temp.v[1].pos-temp2.v[1].pos)<=H)
                 {
-                    group[k].in_range[i]=true;
+                    if(pow(temp.v[0].pos-temp2.v[0].pos,2)+pow(temp.v[1].pos-temp2.v[1].pos,2)<=pow(H,2))
+                    {
+                        group[k].in_range[i]=true;
+                    }
                 }
             }
         }
@@ -113,7 +116,7 @@ void caculate()
                 for(int j=0;j<2;j++)
                 {
                     value& temp=group[i].v[j],temp2=group[k].v[j];
-                    temp.rho+=pow((pow(H,2)-abs(temp.pos-temp2.pos)),3);
+                    temp.rho+=pow((pow(H,2)-pow(temp.pos-temp2.pos,2)),3);
                 }
             }
         }
@@ -136,11 +139,11 @@ void caculate()
                 {
                     value& temp=group[i].v[j],temp2=group[k].v[j];
                     double r=abs(temp.pos-temp2.pos);
-                    temp.pressure+=((temp.p+temp2.p)/(2*temp.rho*temp2.rho))*pow(H,2)*(temp.pos-temp2.pos);
+                    temp.pressure+=((temp.p+temp2.p)/(2*temp.rho*temp2.rho))*pow(H-r,2)*(temp.pos-temp2.pos);
                     if(r)temp.pressure/=r;
-                    //if(temp.rho*temp2.rho)temp.pressure/=2*temp.rho*temp2.rho;
                     //else temp.pressure=0;
-                    cout<<temp.pressure<<endl;
+                    //if(temp.rho*temp2.rho)temp.pressure/=2*temp.rho*temp2.rho;
+                    //cout<<temp.pressure<<endl;
                 }
             }
         }
@@ -160,13 +163,15 @@ void caculate()
                 {
                     value& temp=group[i].v[j],temp2=group[k].v[j];
                     double r=abs(temp.pos-temp2.pos);
-                    temp.velocity+=(temp.v-temp2.v)*(H-r)/(temp.rho*temp2.rho);
+                    temp.velocity+=(temp2.v-temp.v)*(H-r);
+                    if(temp.rho*temp2.rho)temp.velocity/=temp.rho*temp2.rho;
+                    //else temp.velocity=0;
                 }
             }
         }
         for(int j=0;j<2;j++)
         {
-            group[i].v[j].velocity*=normalize;
+            group[i].v[j].velocity*=normalize*mu;
             //cout<<group[i].v[j].velocity<<endl;
         }
     }//黏度
@@ -179,7 +184,7 @@ void caculate()
             temp.a=temp.pressure+temp.velocity;
             if(j)temp.a+=g;
             temp.v+=temp.a;
-            temp.pos+=temp.v;
+            temp.pos+=temp.v*delta_t;
         }
         //cout<<group[i].v[0].a<<" "<<group[i].v[1].a<<endl;
     }
@@ -198,7 +203,7 @@ int main()
     for(int i=0;i<particle_amount;i++)
     {
         //group[i].cin_pos(pixel/4.0+i%(particlerange/(2*radius))*radius*2, i/(particlerange/(2*radius))*radius*2);
-        group[i].cin_pos(pixel/4.0+i%20*radius*2, i/20*radius*2);
+        group[i].cin_pos(pixel/4.0+i%20*initial_dis, i/20*initial_dis);
     }
     while (window.isOpen())
     {
@@ -211,7 +216,7 @@ int main()
                 window.close();
             }
         }
-        usleep(0);
+        usleep(10000);
         caculate();
     }
     return 0;
