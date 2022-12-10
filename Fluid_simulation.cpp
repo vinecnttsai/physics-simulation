@@ -3,11 +3,12 @@
 #include <time.h>
 #include <unistd.h>
 #include <SFML/Graphics.hpp>
-#define pi 3.1416
+#define pi 3.1415926
 using namespace std;
 using namespace sf;
-const int pixel=1500,b_up=pixel,b_bottom=0,b_left=0,b_right=pixel,radius=15,particlerange=pixel/2,particle_amount=625;
-const double mu=0.5,H=80.0,damp=-0.9,g=-9.8,K=20.0,rho0=1.0;
+const int pixel=1500,b_up=pixel,b_bottom=0,b_left=0,b_right=pixel,particlerange=pixel/2,particle_amount=20*20;
+const double mu=0.5,damp=-0.5,g=-9.8,K=1.0,rho0=1.0,radius=5.0,m=radius*0.15,H=2.5*radius;
+const double normalize=(45.0*m)/(pi*pow(H,6));
 RenderWindow window(VideoMode(pixel, pixel), "Fluid Simulation");
 CircleShape circle;
 class value
@@ -30,14 +31,11 @@ class particle
         void cin_pos(double x,double y);
         void c_rho();
         void reset();
-        double mass,h;
         value v[2];
         bool in_range[particle_amount];
 };
 void particle::cin_pos(double x,double y)
 {
-    h=H;
-    mass=0.1;
     v[0].pos=x;
     v[1].pos=y;
 }
@@ -110,21 +108,21 @@ void caculate()
     {
         for(int k=0;k<particle_amount;k++)
         {
-            if(!group[k].in_range[i]&&i!=k)
+            if(group[k].in_range[i]&&i!=k)
             {
                 for(int j=0;j<2;j++)
                 {
                     value& temp=group[i].v[j],temp2=group[k].v[j];
-                    temp.rho+=pow(pow(group[i].h,2)-pow(temp.pos-temp2.pos,2),3);
+                    temp.rho+=pow((pow(H,2)-abs(temp.pos-temp2.pos)),3);
                 }
             }
         }
         for(int j=0;j<2;j++)
         {
             value& temp=group[i].v[j];
-            temp.rho*=group[i].mass*315.0/(64.0*pi*pow(group[i].h,9));
+            temp.rho*=(m*315.0)/(64.0*pi*pow(H,9));
             temp.p=K*(temp.rho-rho0);
-            cout<<temp.rho<<" "<<temp.p<<endl;
+            //cout<<temp.rho<<" "<<temp.p<<" "<<normalize<<endl;
         }
     }//密度
     
@@ -138,14 +136,17 @@ void caculate()
                 {
                     value& temp=group[i].v[j],temp2=group[k].v[j];
                     double r=abs(temp.pos-temp2.pos);
-                    //temp.pressure+=((temp.p+temp2.p)/(2*temp.rho*temp2.rho))*pow(group[i].h-r,2)*((temp.pos-temp2.pos)/r);
-                    //cout<<((temp.p+temp2.p)/(2*temp.rho*temp2.rho))*pow(group[i].h-r,2)*((temp.pos-temp2.pos)/r)<<endl;
+                    temp.pressure+=((temp.p+temp2.p)/(2*temp.rho*temp2.rho))*pow(H,2)*(temp.pos-temp2.pos);
+                    if(r)temp.pressure/=r;
+                    //if(temp.rho*temp2.rho)temp.pressure/=2*temp.rho*temp2.rho;
+                    //else temp.pressure=0;
+                    cout<<temp.pressure<<endl;
                 }
             }
         }
         for(int j=0;j<2;j++)
         {
-            group[i].v[j].pressure*=group[i].mass*45.0/(pi*pow(group[i].h,6));
+            group[i].v[j].pressure*=normalize;
         }
     }//壓力
     
@@ -159,13 +160,14 @@ void caculate()
                 {
                     value& temp=group[i].v[j],temp2=group[k].v[j];
                     double r=abs(temp.pos-temp2.pos);
-                    temp.velocity+=(temp.v-temp2.v)*(group[i].h-r)/(temp.rho*temp2.rho);
+                    temp.velocity+=(temp.v-temp2.v)*(H-r)/(temp.rho*temp2.rho);
                 }
             }
         }
         for(int j=0;j<2;j++)
         {
-            group[i].v[j].velocity*=group[i].mass*mu*45.0/(pi*pow(group[i].h,6));
+            group[i].v[j].velocity*=normalize;
+            //cout<<group[i].v[j].velocity<<endl;
         }
     }//黏度
     
@@ -192,9 +194,11 @@ int main()
 {
     circle.setRadius(radius);
     circle.setFillColor(Color::Blue);
+    //cout<<normalize<<endl;
     for(int i=0;i<particle_amount;i++)
     {
-        group[i].cin_pos(pixel/4.0+i%(particlerange/(2*radius))*radius*2, i/(particlerange/(2*radius))*radius*2);
+        //group[i].cin_pos(pixel/4.0+i%(particlerange/(2*radius))*radius*2, i/(particlerange/(2*radius))*radius*2);
+        group[i].cin_pos(pixel/4.0+i%20*radius*2, i/20*radius*2);
     }
     while (window.isOpen())
     {
@@ -207,7 +211,7 @@ int main()
                 window.close();
             }
         }
-        usleep(100000);
+        usleep(0);
         caculate();
     }
     return 0;
