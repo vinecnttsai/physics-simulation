@@ -6,7 +6,7 @@
 #include <SFML/Graphics.hpp>
 using namespace std;
 using namespace sf;
-const int pixel=1500,wid=10,height=10,particle_amount=wid*height,ks,kd,l0,mask[9][8]={{0,0,0,1,1,1,0,0},{1,1,0,0,0,0,0,1},{0,0,0,0,0,1,1,1},{0,1,1,1,0,0,0,0},{1,1,1,0,0,0,0,0},{0,0,0,0,1,1,1,0},{0,0,1,1,1,0,0,0},{1,0,0,0,0,0,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={pixel/2,pixel/2},ob_num=4;
+const int pixel=1500,wid=10,height=10,particle_amount=wid*height,ks,kd,l0,mask[9][8]={{0,0,0,1,1,1,0,0},{1,1,0,0,0,0,0,1},{0,0,0,0,0,1,1,1},{0,1,1,1,0,0,0,0},{1,1,1,0,0,0,0,0},{0,0,0,0,1,1,1,0},{0,0,1,1,1,0,0,0},{1,0,0,0,0,0,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={pixel/2,pixel/2},ob_num=4,radius;
 const double delta_t=0.1;
 RenderWindow window(VideoMode(pixel, pixel), "Fluid Simulation");
 CircleShape circle;
@@ -14,7 +14,7 @@ class particle
 {
     public:
         double pos[2],F[2],mass,velocity[2];
-    void update();
+        void update();
 };
 void particle::update()
 {
@@ -26,6 +26,17 @@ void particle::update()
 }
 particle p[particle_amount];
 int line[ob_num][4][3];
+void draw(int point)
+{
+    circle.setPosition(p[point].pos[0]*10,pixel-p[point].pos[1]*10);
+    window.draw(circle);
+}
+double dis(int A,int B)
+{
+    int posa=p[A].pos[0],posa2=p[A].pos[1];
+    int posb=p[B].pos[0],posb2=p[B].pos[1];
+    return sqrt(pow(posa-posb,2)+pow(posa2-posb2,2));
+}
 void change_velocity(int point,int normal_a,int normal_b)
 {
     double dot=normal_a*p[point].velocity[0]+normal_b*p[point].velocity[1];
@@ -33,13 +44,15 @@ void change_velocity(int point,int normal_a,int normal_b)
     p[point].velocity[0]-=2*normal_a*dot;
     p[point].velocity[1]-=2*normal_b*dot;
 }
-int self_collision(int point)
+void self_collision(int point)
 {
-    
-    
-    
-    
-    return -1;
+    for(int i=0;i<particle_amount;i++)
+    {
+        if(i!=point&&dis(i, point)<2*radius)
+        {
+            change_velocity(i,p[i].pos[0]-p[point].pos[0],-1*(p[i].pos[1]-p[point].pos[1]));
+        }
+    }
 }
 int collision(int point)
 {
@@ -73,12 +86,6 @@ int collision(int point)
 double hooke(double posa,double posb)
 {
     return ks*(abs(posa-posb)-l0);
-}
-double dis(int A,int B)
-{
-    int posa=p[A].pos[0],posa2=p[A].pos[1];
-    int posb=p[B].pos[0],posb2=p[B].pos[1];
-    return sqrt(pow(posa-posb,2)+pow(posa2-posb2,2));
 }
 void ob_line(int x1,int y1,int x2,int y2,int lebal,int line_num)
 {
@@ -141,9 +148,9 @@ void spring_mass_model()
     
     for(int i=0;i<particle_amount;i++)
     {
-        int lebal=collision(i),lebal2=self_collision(i);
-        if(!lebal)p[i].update();
-        else
+        int lebal=collision(i);
+        self_collision(i);
+        if(lebal>0)
         {
             double min=float(INT_MAX),distance_;
             int l;
@@ -157,13 +164,9 @@ void spring_mass_model()
                 }
             }
             change_velocity(i,line[lebal][l][0],line[lebal][l][1]);
-            
         }
-        
-        if(lebal2>=0)
-        {
-            change_velocity(i,p[lebal2].pos[0]-p[i].pos[0],-1*(p[lebal2].pos[1]-p[i].pos[1]));
-        }
+        p[i].update();
+        draw(i);
     }
 }
 int main()
@@ -182,6 +185,9 @@ int main()
             }
         }
         usleep(0);
+        window.clear(Color::White);
+        spring_mass_model();
+        window.display();
     }
     return 0;
 }
