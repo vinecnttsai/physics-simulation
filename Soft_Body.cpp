@@ -6,8 +6,8 @@
 //#include <SFML/Graphics.hpp>
 using namespace std;
 //using namespace sf;
-const int pixel=1500,wid=1,height=2,particle_amount=wid*height,mask[9][8]={{0,0,0,1,1,1,0,0},{1,1,0,0,0,0,0,1},{0,0,0,0,0,1,1,1},{0,1,1,1,0,0,0,0},{1,1,1,0,0,0,0,0},{0,0,0,0,1,1,1,0},{0,0,1,1,1,0,0,0},{1,0,0,0,0,0,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={160/*改變x為最大值*/,163},ob_num=4,wid_wall=500;
-const double delta_t=0.01,g=-9.8,radius=0.3,r=1.0,L01=1.0,L02=sqrt(2),damp1=0.5,damp2=0.01,ks=0.1,kd=0.1;
+const int pixel=1500,wid=2,height=2,particle_amount=wid*height,mask[9][8]={{0,0,0,1,1,1,0,0},{1,1,0,0,0,0,0,1},{0,0,0,0,0,1,1,1},{0,1,1,1,0,0,0,0},{1,1,1,0,0,0,0,0},{0,0,0,0,1,1,1,0},{0,0,1,1,1,0,0,0},{1,0,0,0,0,0,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={160/*改變x為最大值*/,163},ob_num=4,wid_wall=500;
+const double delta_t=0.01,g=-9.8,radius=0.3,r=1.0,L01=r,L02=sqrt(2*pow(r,2)),damp1=0.5,damp2=0.01,ks=0.1,kd=0.1;
 //RenderWindow window(VideoMode(pixel, pixel), "Fluid Simulation");
 //CircleShape circle;
 class particle
@@ -27,6 +27,7 @@ void particle::update()
 {
     for(int j=0;j<2;j++)
     {
+        if(!j)cout<<F[j]<<endl;
         velocity[j]+=F[j]/mass*delta_t;
         pos[j]+=velocity[j]*delta_t;
     }
@@ -206,8 +207,8 @@ void spring_mass_model()
                 damping=kd*(rx*vx+ry*vy)/dis(A,B);
                 for(int j=0;j<2;j++)
                 {
+                    if(!j)cout<<p[A].pos[j]-p[B].pos[j]<<" hooke: "<<hooke(p[A].pos[j],p[B].pos[j],type)<<" "<<damping<<endl;
                     p[i].F[j]=-1*(hooke(p[A].pos[j],p[B].pos[j],type)+damping);
-                    
                     //if(B==1&&j)cout<<(abs(p[A].pos[j]-p[B].pos[j])-L01)<<" "<<hooke(p[A].pos[j], p[B].pos[j],type)<<endl;
                     if(j)p[i].F[j]+=g;
                 }
@@ -239,7 +240,7 @@ void spring_mass_model()
         self_collision(i);
         draw(i);
     }
-    //cout<<p[0].pos[1]<<" "<<p[1].pos[1]<<endl;
+    cout<<p[0].pos[0]<<" "<<p[1].pos[0]<<endl;
 }
 int main()
 {
