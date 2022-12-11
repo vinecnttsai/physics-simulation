@@ -6,8 +6,8 @@
 //#include <SFML/Graphics.hpp>
 using namespace std;
 //using namespace sf;
-const int pixel=1500,wid=1,height=1,particle_amount=wid*height,ks=0.5,kd=0.5,mask[9][8]={{0,0,0,1,1,1,0,0},{1,1,0,0,0,0,0,1},{0,0,0,0,0,1,1,1},{0,1,1,1,0,0,0,0},{1,1,1,0,0,0,0,0},{0,0,0,0,1,1,1,0},{0,0,1,1,1,0,0,0},{1,0,0,0,0,0,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={160/*改變x為最大值*/,163},ob_num=4;
-const double delta_t=0.1,g=-9.8,radius=0.3,r=1.0,L01=1.0,L02=sqrt(2);
+const int pixel=1500,wid=1,height=1,particle_amount=wid*height,ks=0.5,kd=0.5,mask[9][8]={{0,0,0,1,1,1,0,0},{1,1,0,0,0,0,0,1},{0,0,0,0,0,1,1,1},{0,1,1,1,0,0,0,0},{1,1,1,0,0,0,0,0},{0,0,0,0,1,1,1,0},{0,0,1,1,1,0,0,0},{1,0,0,0,0,0,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={160/*改變x為最大值*/,163},ob_num=4,wid_wall=500;
+const double delta_t=0.1,g=-9.8,radius=0.3,r=1.0,L01=1.0,L02=sqrt(2),d=0.001;
 //RenderWindow window(VideoMode(pixel, pixel), "Fluid Simulation");
 //CircleShape circle;
 class particle
@@ -49,19 +49,19 @@ void change_velocity(int point,int normal_a,int normal_b,float length)
 {
     double dot=normal_a*p[point].velocity[0]+normal_b*p[point].velocity[1];
     
-    cout<<p[point].velocity[1]<<endl;
+    //cout<<p[point].velocity[1]<<endl;
     
-    p[point].velocity[0]-=2*dot/normal_a;
-    p[point].velocity[1]-=2*dot/normal_b;
+    if(normal_a)p[point].velocity[0]-=2*dot/normal_a;
+    if(normal_b)p[point].velocity[1]-=2*dot/normal_b;
     
     float r=length/(sqrt(pow(normal_a,2)+pow(normal_b,2))),unit_a,unit_b;
     unit_a=normal_a*r;
     unit_b=normal_b*r;
-    p[point].pos[0]+=unit_a;
-    p[point].pos[1]+=unit_b;
+    p[point].pos[0]+=unit_a+d;
+    p[point].pos[1]+=unit_b+d;
     
-    cout<<p[point].velocity[1]<<" "<<p[point].pos[1]<<endl;
-    
+    //cout<<p[point].velocity[0]<<" "<<p[point].pos[0]<<" "<<p[point].pos[1]<<endl;
+    //cout<<normal_a<<" "<<r<<endl;
     //改變位置
     
 }
@@ -94,7 +94,8 @@ int collision(int point)
                 deltay=line[i][k][0]*l_z-line[i][k][2]*l_x;
                 ansa=deltax/delta;
                 ansb=deltay/delta;
-                //cout<<i<<" "<<k<<" "<<ansa<<" "<<ansb<<" "<<p[point].pos[1]<<endl;
+                //cout<<" "<<x1<<" "<<x2<<" "<<" "<<x1-x2<<" "<<" "<<l_y<<p[point].pos[1]<<endl;
+                //if(i==1)cout<<i<<" "<<k<<" "<<ansa<<" "<<ansb<<" "<<p[point].pos[1]<<endl;
             }
             
             float rate=(y1-ansb)/(y1-p[point].pos[1]),rate2=(ansb-line[i][k][3])/(line[i][k][4]),rate3=(ansa-line[i][k][5])/(line[i][k][6]);
@@ -116,7 +117,7 @@ int collision(int point)
                 }
             }
         }
-        //cout<<p[point].pos[1]<<" "<<count_ob[i]<<endl;
+        //if(i==1)cout<<p[point].pos[1]<<" "<<count_ob[i]<<endl;
     }
     
     
@@ -149,10 +150,10 @@ void ob_line(int x1,int y1,int x2,int y2,int lebal,int line_num)
 }
 void create_obstacle()
 {
-    ob_line(0,4,149,4,1,1);
-    ob_line(0,0,149,0,1,2);
-    ob_line(0,1,0,3,1,3);
-    ob_line(149,1,149,3,1,4);
+    ob_line(0,0,149,0,1,1);
+    ob_line(0,-1*wid_wall,149,-1*wid_wall,1,2);
+    ob_line(0,-1*wid_wall+1,0,-1,1,3);
+    ob_line(149,-1*wid_wall+1,149,-1,1,4);
     
     ob_line(1,0,3,0,2,1);
     ob_line(0,0,0,149,2,2);
@@ -203,6 +204,7 @@ void spring_mass_model()
     {
         int lebal=collision(i);
         self_collision(i);
+        //cout<<lebal<<" "<<p[i].pos[1]<<endl;
         if(lebal>0)
         {
             float min=float(INT_MAX),distance_;
@@ -221,7 +223,7 @@ void spring_mass_model()
         else p[i].update();
         draw(i);
     }
-    //cout<<p[0].pos[0]<<" "<<p[0].pos[1]<<" "<<endl;
+    cout<<p[0].pos[0]<<" "<<p[0].pos[1]<<" "<<endl;
 }
 int main()
 {
