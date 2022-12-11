@@ -3,13 +3,13 @@
 #include <time.h>
 #include <vector>
 #include <unistd.h>
-#include <SFML/Graphics.hpp>
+//#include <SFML/Graphics.hpp>
 using namespace std;
-using namespace sf;
-const int pixel=1500,wid=10,height=10,particle_amount=wid*height,ks=0.5,kd=0.5,mask[9][8]={{0,0,0,1,1,1,0,0},{1,1,0,0,0,0,0,1},{0,0,0,0,0,1,1,1},{0,1,1,1,0,0,0,0},{1,1,1,0,0,0,0,0},{0,0,0,0,1,1,1,0},{0,0,1,1,1,0,0,0},{1,0,0,0,0,0,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={pixel/2,pixel/2},ob_num=4;
+//using namespace sf;
+const int pixel=1500,wid=1,height=1,particle_amount=wid*height,ks=0.5,kd=0.5,mask[9][8]={{0,0,0,1,1,1,0,0},{1,1,0,0,0,0,0,1},{0,0,0,0,0,1,1,1},{0,1,1,1,0,0,0,0},{1,1,1,0,0,0,0,0},{0,0,0,0,1,1,1,0},{0,0,1,1,1,0,0,0},{1,0,0,0,0,0,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={160/*改變x為最大值*/,163},ob_num=4;
 const double delta_t=0.1,g=-9.8,radius=0.3,r=1.0,L01=1.0,L02=sqrt(2);
-RenderWindow window(VideoMode(pixel, pixel), "Fluid Simulation");
-CircleShape circle;
+//RenderWindow window(VideoMode(pixel, pixel), "Fluid Simulation");
+//CircleShape circle;
 class particle
 {
     public:
@@ -32,24 +32,38 @@ void particle::update()
     }
 }
 particle p[particle_amount];
-int line[ob_num][4][3];
+int line[ob_num+1][4][7];
 void draw(int point)
 {
-    circle.setPosition(p[point].pos[0]*10,pixel-p[point].pos[1]*10);
-    window.draw(circle);
+    //circle.setPosition(p[point].pos[0]*10,pixel-p[point].pos[1]*10);
+    //window.draw(circle);
 }
 double dis(int A,int B)
 {
-    int posa=p[A].pos[0],posa2=p[A].pos[1];
-    int posb=p[B].pos[0],posb2=p[B].pos[1];
+    double posa=p[A].pos[0],posa2=p[A].pos[1];
+    double posb=p[B].pos[0],posb2=p[B].pos[1];
+    //cout<<posa<<" "<<posb<<" "<<posa2<<" "<<posb2<<endl;
     return sqrt(pow(posa-posb,2)+pow(posa2-posb2,2));
 }
-void change_velocity(int point,int normal_a,int normal_b)
+void change_velocity(int point,int normal_a,int normal_b,float length)
 {
     double dot=normal_a*p[point].velocity[0]+normal_b*p[point].velocity[1];
     
-    p[point].velocity[0]-=2*normal_a*dot;
-    p[point].velocity[1]-=2*normal_b*dot;
+    cout<<p[point].velocity[1]<<endl;
+    
+    p[point].velocity[0]-=2*dot/normal_a;
+    p[point].velocity[1]-=2*dot/normal_b;
+    
+    float r=length/(sqrt(pow(normal_a,2)+pow(normal_b,2))),unit_a,unit_b;
+    unit_a=normal_a*r;
+    unit_b=normal_b*r;
+    p[point].pos[0]+=unit_a;
+    p[point].pos[1]+=unit_b;
+    
+    cout<<p[point].velocity[1]<<" "<<p[point].pos[1]<<endl;
+    
+    //改變位置
+    
 }
 void self_collision(int point)
 {
@@ -57,36 +71,62 @@ void self_collision(int point)
     {
         if(i!=point&&dis(i, point)<2*radius)
         {
-            change_velocity(i,p[i].pos[0]-p[point].pos[0],-1*(p[i].pos[1]-p[point].pos[1]));
+            change_velocity(i,p[i].pos[0]-p[point].pos[0],-1*(p[i].pos[1]-p[point].pos[1]),radius-dis(i,point));
         }
     }
 }
 int collision(int point)
 {
-    int count_ob[ob_num+1],posa=ray_start_point[0],posb=ray_start_point[1];
+    int count_ob[ob_num+1];
     memset(count_ob,0,sizeof(count_ob));
     double x1=ray_start_point[0],x2=p[point].pos[0],y1=ray_start_point[1],y2=p[point].pos[1];
     double l_x=y1-y2,l_y=-1*(x1-x2),l_z=x2*y1-x1*y2;
     
-    for(int i=0;i<ob_num;i++)
+    for(int i=1;i<=ob_num;i++)
     {
         for(int k=0;k<4;k++)
         {
-            double delta,deltax,deltay,ansa,ansb;
+            double delta,deltax,deltay,ansa=0,ansb=0;
             delta=line[i][k][0]*l_y-line[i][k][1]*l_x;
-            deltax=line[i][k][2]*l_y-line[i][k][1]*l_z;
-            deltay=line[i][k][0]*l_z-line[i][k][2]*l_x;
-            ansa=deltax/delta;
-            ansb=deltay/delta;
+            if(delta)
+            {
+                deltax=line[i][k][2]*l_y-line[i][k][1]*l_z;
+                deltay=line[i][k][0]*l_z-line[i][k][2]*l_x;
+                ansa=deltax/delta;
+                ansb=deltay/delta;
+                //cout<<i<<" "<<k<<" "<<ansa<<" "<<ansb<<" "<<p[point].pos[1]<<endl;
+            }
             
-            if((abs(posa-ansa)<abs(posa-p[point].pos[0]))&&(abs(posb-ansb)<abs(posb-p[point].pos[1])))count_ob[i]++;
+            float rate=(y1-ansb)/(y1-p[point].pos[1]),rate2=(ansb-line[i][k][3])/(line[i][k][4]),rate3=(ansa-line[i][k][5])/(line[i][k][6]);
+            //if(y1=p[point].pos[1])rate=1;
+            if(!line[i][k][4])rate2=-1;
+            if(!line[i][k][6])rate3=-1;
+            if(delta!=0)
+            {
+                //cout<<rate3<<" "<<rate2<<" "<<rate<<endl;
+                if((rate3>=0&&rate3<=1.0)||(rate2>=0&&rate2<=1.0))
+                {
+                    if(rate>=0&&rate<=1)
+                    {
+                        count_ob[i]++;
+                        //cout<<"dd"<<endl;
+                    }
+                    
+                    //cout<<rate<<" "<<rate2<<endl;
+                }
+            }
         }
+        //cout<<p[point].pos[1]<<" "<<count_ob[i]<<endl;
     }
     
     
     for(int i=1;i<=ob_num;i++)
     {
-        if(!count_ob[i]%2)return i;
+        if(count_ob[i]%2&&count_ob[i])
+        {
+            //cout<<p[point].pos[1]<<endl;
+            return i;
+        }
     }
     return 0;
 }
@@ -100,29 +140,33 @@ void ob_line(int x1,int y1,int x2,int y2,int lebal,int line_num)
     line[lebal][line_num-1][0]=y1-y2;
     line[lebal][line_num-1][1]=-1*(x1-x2);
     line[lebal][line_num-1][2]=x2*y1-x1*y2;
+    line[lebal][line_num-1][3]=y1;
+    line[lebal][line_num-1][4]=y2-y1;
+    line[lebal][line_num-1][3]=x1;
+    line[lebal][line_num-1][4]=x2-x1;
     
     //法向量
 }
 void create_obstacle()
 {
-    ob_line(0,5,149,5,1,1);
+    ob_line(0,4,149,4,1,1);
     ob_line(0,0,149,0,1,2);
-    ob_line(0,0,0,5,1,3);
-    ob_line(149,0,149,5,1,4);
+    ob_line(0,1,0,3,1,3);
+    ob_line(149,1,149,3,1,4);
     
-    ob_line(0,0,5,0,2,1);
+    ob_line(1,0,3,0,2,1);
     ob_line(0,0,0,149,2,2);
-    ob_line(0,149,5,149,2,3);
-    ob_line(5,0,5,149,2,4);
+    ob_line(1,149,3,149,2,3);
+    ob_line(4,0,4,149,2,4);
     
     ob_line(0,149,149,149,3,1);
-    ob_line(0,149-5,0,149,3,2);
-    ob_line(0,149-5,149,149-5,3,3);
-    ob_line(149,149-5,149,149,3,4);
+    ob_line(0,149-4+1,0,148,3,2);
+    ob_line(0,149-4,149,149-4,3,3);
+    ob_line(149,149-4+1,149,148,3,4);
     
-    ob_line(149-5,149,149,149,4,1);
-    ob_line(149-5,0,149-5,149,4,2);
-    ob_line(149-5,0,149,0,4,3);
+    ob_line(149-4+1,149,148,149,4,1);
+    ob_line(149-4,0,149-4,149,4,2);
+    ob_line(149-4+1,0,148,0,4,3);
     ob_line(149,0,149,149,4,4);
 }
 void spring_mass_model()
@@ -161,32 +205,35 @@ void spring_mass_model()
         self_collision(i);
         if(lebal>0)
         {
-            double min=float(INT_MAX),distance_;
-            int l;
+            float min=float(INT_MAX),distance_;
+            int l=0;
             for(int k=0;k<4;k++)
             {
-                distance_=(p[i].pos[0]*line[lebal][k][0]+p[i].pos[1]*line[lebal][k][1])/sqrt(pow(line[lebal][k][0],2)+pow(line[lebal][k][1],2));
+                distance_=abs((p[i].pos[0]*line[lebal][k][0]+p[i].pos[1]*line[lebal][k][1]-line[lebal][k][2]))/sqrt(pow(line[lebal][k][0],2)+pow(line[lebal][k][1],2));
                 if(min>distance_)
                 {
                     min=distance_;
                     l=k;
                 }
             }
-            change_velocity(i,line[lebal][l][0],line[lebal][l][1]);
+            change_velocity(i,line[lebal][l][0],line[lebal][l][1],min);
         }
-        p[i].update();
+        else p[i].update();
         draw(i);
     }
+    //cout<<p[0].pos[0]<<" "<<p[0].pos[1]<<" "<<endl;
 }
 int main()
 {
-    circle.setRadius(radius);
-    circle.setFillColor(Color::Blue);
+    //circle.setRadius(radius);
+    //circle.setFillColor(Color::Blue);
     for(int i=0;i<particle_amount;i++)
     {
-        p[i].pos[0]=pixel/5+i%wid*r;
-        p[i].pos[1]=pixel/5+i/wid*r;
+        p[i].pos[0]=pixel/20+i%wid*r;
+        p[i].pos[1]=pixel/20+i/wid*r;
     }
+    create_obstacle();
+    /*
     while (window.isOpen())
     {
         Event event;
@@ -202,6 +249,12 @@ int main()
         window.clear(Color::White);
         spring_mass_model();
         window.display();
+    }
+     */
+    while(true)
+    {
+        usleep(10);
+        spring_mass_model();
     }
     return 0;
 }
