@@ -6,8 +6,9 @@
 //#include <SFML/Graphics.hpp>
 using namespace std;
 //using namespace sf;
-const int pixel=1500,wid=2,height=2,particle_amount=wid*height,mask[9][8]={{0,0,0,1,1,1,0,0},{1,1,0,0,0,0,0,1},{0,0,0,0,0,1,1,1},{0,1,1,1,0,0,0,0},{1,1,1,0,0,0,0,0},{0,0,0,0,1,1,1,0},{0,0,1,1,1,0,0,0},{1,0,0,0,0,0,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={160/*改變x為最大值*/,163},ob_num=4,wid_wall=500;
-const double delta_t=0.01,g=-9.8,radius=0.3,r=1.0,L01=r,L02=sqrt(2*pow(r,2)),damp1=0.5,damp2=0.01,ks=0.1,kd=0.1;
+const int pixel=1500,wid=2,height=2,particle_amount=wid*height,mask[9][8]={{0,0,0,1,1,1,0,0},{0,1,1,1,0,0,0,0},{0,0,0,0,0,1,1,1},{1,1,0,0,0,0,0,1},{0,1,1,1,1,1,0,0},{0,0,0,1,1,1,1,1},{1,1,1,1,0,0,0,1},{1,1,0,0,0,1,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={160/*改變x為最大值*/,163},hooke_vector[8]={2,0,2,1,2,0,2,1},ob_num=4,wid_wall=500;
+const double delta_t=0.01,g=-9.8,radius=0.3,r=1.0,L0=r,damp1=0.5,damp2=0.01,ks=0.1,kd=0.1;
+
 //RenderWindow window(VideoMode(pixel, pixel), "Fluid Simulation");
 //CircleShape circle;
 class particle
@@ -15,7 +16,9 @@ class particle
     public:
         particle();
         double pos[2],F[2],mass,velocity[2];
+        int mask_num;
         void update();
+        void mask(int i);
 };
 particle::particle()
 {
@@ -27,17 +30,40 @@ void particle::update()
 {
     for(int j=0;j<2;j++)
     {
-        if(!j)cout<<F[j]<<endl;
+        //if(!j)cout<<F[j]<<endl;
         velocity[j]+=F[j]/mass*delta_t;
         pos[j]+=velocity[j]*delta_t;
     }
+}
+void particle::mask(int i)
+{
+    if(!i)mask_num=0;
+    else if(i==wid-1)mask_num=1;
+    else if(i==particle_amount-wid)mask_num=2;
+    else if(i==particle_amount-1)mask_num=3;
+    else if(!(i/wid))mask_num=4;
+    else if(!(i%wid))mask_num=5;
+    else if(!((i+1)%wid))mask_num=6;
+    else if(i/wid==height-1)mask_num=7;
+    else mask_num=8;
 }
 particle p[particle_amount];
 int line[ob_num+1][4][7];
 void draw(int point)
 {
-    //circle.setPosition(p[point].pos[0]*10,pixel-p[point].pos[1]*10+50);
+    //circle.setPosition(p[point].pos[0]*10,pixel-p[point].pos[1]*10-50);
     //window.draw(circle);
+}
+void draw_line(int point1,int point2)
+{
+    /*
+    Vertex line[] =
+    {
+        Vertex(Vector2f(p[point1].pos[0]*10,pixel-p[point1].pos[1]*10-50)),
+        Vertex(Vector2f(p[point2].pos[0]*10,pixel-p[point2].pos[1]*10-50))
+    };
+    window.draw(line, 2, sf::Lines);
+    */
 }
 double dis(int A,int B)
 {
@@ -145,10 +171,9 @@ int collision(int point)
     }
     return 0;
 }
-double hooke(double posa,double posb,int type)
+double hooke(double posa,double posb)
 {
-    if(!type)return ks*(abs(posa-posb)-L01);
-    else return ks*(abs(posa-posb)-L02);
+    return ks*(abs(posa-posb)-L0);
 }
 void ob_line(int x1,int y1,int x2,int y2,int lebal,int line_num)
 {
@@ -188,32 +213,35 @@ void spring_mass_model()
 {
     for(int i=0;i<particle_amount;i++)
     {
-        int mask_num;
-        if(!i)mask_num=0;
-        else if(i==particle_amount-1)mask_num=1;
-        else if(i/wid==height-1)mask_num=2;
-        else if(i==wid-1)mask_num=3;
-        else if(!(i+1)%wid)mask_num=4;
-        else if(!i%wid)mask_num=5;
-        else if(!i/wid)mask_num=6;
-        else if(i/wid==height-1)mask_num=7;
-        else mask_num=8;
         for(int k=0;k<8;k++)
         {
-            if(mask[mask_num][k])
+            if(mask[p[i].mask_num][k])
             {
-                int A=i,B=i+mask_pos[k][0]+mask_pos[k][1]*wid,type=abs(mask_pos[k][0])+abs(mask_pos[k][1])-1;
-                int damping,rx=p[B].pos[0]-p[A].pos[0],ry=p[B].pos[1]-p[A].pos[1],vx=p[B].velocity[0]-p[A].velocity[0],vy=p[B].velocity[1]-p[A].velocity[1];
-                damping=kd*(rx*vx+ry*vy)/dis(A,B);
-                for(int j=0;j<2;j++)
+                int A=i,B=i+mask_pos[k][0]+mask_pos[k][1]*wid;
+                
+                if(B>=0)
                 {
-                    if(!j)cout<<p[A].pos[j]-p[B].pos[j]<<" hooke: "<<hooke(p[A].pos[j],p[B].pos[j],type)<<" "<<damping<<endl;
-                    p[i].F[j]=-1*(hooke(p[A].pos[j],p[B].pos[j],type)+damping);
-                    //if(B==1&&j)cout<<(abs(p[A].pos[j]-p[B].pos[j])-L01)<<" "<<hooke(p[A].pos[j], p[B].pos[j],type)<<endl;
-                    if(j)p[i].F[j]+=g;
+                    int         damping,rx=p[B].pos[0]-p[A].pos[0],ry=p[B].pos[1]-p[A].pos[1],vx=p[B].velocity[0]-p[A].velocity[0],vy=p[B].velocity[1]-p[A].velocity[1];
+                    damping=kd*(rx*vx+ry*vy)/dis(A,B);
+                    for(int j=0;j<2;j++)
+                    {
+                        if(hooke_vector[k]<2&&hooke_vector[k]==j)
+                        {
+                            //if(!j)cout<<p[A].pos[j]-p[B].pos[j]<<" hooke: "<<hooke(p[A].pos[j],p[B].pos[j],type)<<" "<<damping<<endl;
+                            p[i].F[j]=-1*(hooke(p[A].pos[j],p[B].pos[j])+damping);
+                            //if(B==1&&j)cout<<(abs(p[A].pos[j]-p[B].pos[j])-L01)<<" "<<hooke(p[A].pos[j], p[B].pos[j],type)<<endl;
+                        }
+                        else if(hooke_vector[k]>=2)
+                        {
+                            p[i].F[j]=-1*(hooke(p[A].pos[j],p[B].pos[j])+damping);
+                        }
+                    
+                    }
+                    draw_line(A, B);
                 }
             }
         }
+        p[i].F[1]+=g;
     }//F
     
     for(int i=0;i<particle_amount;i++)
@@ -240,14 +268,16 @@ void spring_mass_model()
         self_collision(i);
         draw(i);
     }
-    cout<<p[0].pos[0]<<" "<<p[1].pos[0]<<endl;
+    cout<<"F:"<<p[0].F[1]<<" "<<p[0].F[0]<<" "<<p[1].F[1]<<" "<<p[1].F[0]<<endl;
+    cout<<p[0].pos[1]<<" "<<p[0].pos[0]<<" "<<p[1].pos[1]<<" "<<p[1].pos[0]<<endl;
 }
 int main()
 {
     //circle.setRadius(radius*20);
-    //circle.setFillColor(Color::Blue);
+    //circle.setFillColor(Color::White);
     for(int i=0;i<particle_amount;i++)
     {
+        p[i].mask(i);
         p[i].pos[0]=pixel/20+i%wid*r;
         p[i].pos[1]=pixel/20+i/wid*r;
     }
@@ -265,7 +295,7 @@ int main()
             }
         }
         usleep(0);
-        window.clear(Color::White);
+        window.clear(Color::Black);
         spring_mass_model();
         window.display();
     }
