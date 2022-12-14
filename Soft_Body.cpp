@@ -171,9 +171,10 @@ int collision(int point)
     }
     return 0;
 }
-double hooke(double posa,double posb)
+double hooke(double difference)
 {
-    return ks*(abs(posa-posb)-L0);
+    if(differnece>0)return ks*(abs(difference)-L0);
+    else return -1*ks*(abs(difference)-L0);
 }
 void ob_line(int x1,int y1,int x2,int y2,int lebal,int line_num)
 {
@@ -228,7 +229,7 @@ void spring_mass_model()
                         if(hooke_vector[k]<2&&hooke_vector[k]==j)
                         {
                             //if(!j)cout<<p[A].pos[j]-p[B].pos[j]<<" hooke: "<<hooke(p[A].pos[j],p[B].pos[j],type)<<" "<<damping<<endl;
-                            p[i].F[j]=-1*(hooke(p[A].pos[j],p[B].pos[j])+damping);
+                            p[i].F[j]=-1*(hooke(p[B].pos[j]-p[A].pos[j])+damping);
                             //if(B==1&&j)cout<<(abs(p[A].pos[j]-p[B].pos[j])-L01)<<" "<<hooke(p[A].pos[j], p[B].pos[j],type)<<endl;
                         }
                         else if(hooke_vector[k]>=2)
