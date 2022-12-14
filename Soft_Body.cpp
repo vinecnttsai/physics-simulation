@@ -250,6 +250,7 @@ void spring_mass_model()
         int lebal=collision(i);
         //cout<<lebal<<" "<<p[i].pos[1]<<endl;
         //cout<<lebal<<endl;
+        self_collision(i);
         if(lebal>0)
         {
             float min=float(INT_MAX),distance_;
@@ -264,9 +265,9 @@ void spring_mass_model()
                 }
             }
             change_velocity(i,line[lebal][l][0],line[lebal][l][1],min,0);
+            for(int j=0;j<2;j++)p[i].F[j]=0;
         }
         else p[i].update();
-        self_collision(i);
         draw(i);
     }
     cout<<"F:"<<p[0].F[1]<<" "<<p[0].F[0]<<" "<<p[1].F[1]<<" "<<p[1].F[0]<<endl;
