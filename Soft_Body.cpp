@@ -7,7 +7,8 @@
 using namespace std;
 //using namespace sf;
 const int pixel=1500,wid=2,height=2,particle_amount=wid*height,mask[9][8]={{0,0,0,1,1,1,0,0},{0,1,1,1,0,0,0,0},{0,0,0,0,0,1,1,1},{1,1,0,0,0,0,0,1},{0,1,1,1,1,1,0,0},{0,0,0,1,1,1,1,1},{1,1,1,1,0,0,0,1},{1,1,0,0,0,1,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={160/*改變x為最大值*/,163},hooke_vector[8]={2,0,2,1,2,0,2,1},ob_num=4,wid_wall=500;
-const double delta_t=0.01,g=-9.8,radius=0.3,r=1.0,L0=r,damp1=0.5,damp2=0.01,ks=0.1,kd=0.1;
+const double delta_t=0.01,g=-9.8,radius=1.5,r=5.0,L0=r,damp1=0.5,Mass=0.1,ks=1.5,kd=sqrt(4*Mass*ks);
+double damp[2];
 
 //RenderWindow window(VideoMode(pixel, pixel), "Fluid Simulation");
 //CircleShape circle;
@@ -24,7 +25,7 @@ particle::particle()
 {
     velocity[0]=0;
     velocity[1]=0;
-    mass=1;
+    mass=Mass;
 }
 void particle::update()
 {
@@ -59,8 +60,8 @@ void draw_line(int point1,int point2)
     /*
     Vertex line[] =
     {
-        Vertex(Vector2f(p[point1].pos[0]*10,pixel-p[point1].pos[1]*10-50)),
-        Vertex(Vector2f(p[point2].pos[0]*10,pixel-p[point2].pos[1]*10-50))
+        Vertex(Vector2f((p[point1].pos[0]+radius)*10,pixel-(p[point1].pos[1]+radius)*10-50)),
+        Vertex(Vector2f((p[point2].pos[0]+radius)*10,pixel-(p[point2].pos[1]+radius)*10-50))
     };
     window.draw(line, 2, sf::Lines);
     */
@@ -72,7 +73,7 @@ double dis(int A,int B)
     //cout<<posa<<" "<<posb<<" "<<posa2<<" "<<posb2<<endl;
     return sqrt(pow(posa-posb,2)+pow(posa2-posb2,2));
 }
-void change_velocity(int point,double normal_a,double normal_b,double length,int type)
+void change_velocity(int point,double normal_a,double normal_b,double length)
 {
     double dot=normal_a*p[point].velocity[0]+normal_b*p[point].velocity[1];
     
@@ -83,9 +84,9 @@ void change_velocity(int point,double normal_a,double normal_b,double length,int
     //cout<<p[point].velocity[0]<<" "<<p[point].velocity[1]<<endl;
     
     if(normal_a)p[point].velocity[0]-=2*dot/normal_a;
-    p[point].velocity[0]*=(type)?damp2:damp1;
+    p[point].velocity[0]*=damp1;
     if(normal_b)p[point].velocity[1]-=2*dot/normal_b;
-    p[point].velocity[1]*=(type)?damp2:damp1;
+    p[point].velocity[1]*=damp1;
     
     double r=(sqrt(pow(normal_a,2)+pow(normal_b,2))),unit_a,unit_b;
     unit_a=length*(normal_a/r);
@@ -110,7 +111,8 @@ void self_collision(int point)
             //cout<<p[i].pos[0]-p[point].pos[0]<<" "<<-1*(p[i].pos[1]-p[point].pos[1])<<" "<<radius-dis(i,point)<<endl;
             //cout<<"change: ";
             //cout<<-1*(p[i].pos[1]-p[point].pos[1])<<endl;
-            change_velocity(i,-1*(p[i].pos[1]-p[point].pos[1]),p[i].pos[0]-p[point].pos[0],abs(radius-dis(i,point)),1);
+            change_velocity(i,p[i].pos[0]-p[point].pos[0],p[i].pos[1]-p[point].pos[1],abs(radius-dis(i,point)));
+            for(int j=0;j<2;j++)p[i].F[j]=0;
         }
     }
 }
@@ -173,8 +175,10 @@ int collision(int point)
 }
 double hooke(double difference)
 {
-    if(differnece>0)return ks*(abs(difference)-L0);
-    else return -1*ks*(abs(difference)-L0);
+    int differ;
+    differ=(abs(difference)-L0>0)?1:-1;
+    
+    return ks*(abs(difference)-L0)*differ;
 }
 void ob_line(int x1,int y1,int x2,int y2,int lebal,int line_num)
 {
@@ -222,19 +226,18 @@ void spring_mass_model()
                 
                 if(B>=0)
                 {
-                    int         damping,rx=p[B].pos[0]-p[A].pos[0],ry=p[B].pos[1]-p[A].pos[1],vx=p[B].velocity[0]-p[A].velocity[0],vy=p[B].velocity[1]-p[A].velocity[1];
-                    damping=kd*(rx*vx+ry*vy)/dis(A,B);
                     for(int j=0;j<2;j++)
                     {
+                        //damp[j]=-1*kd*(p[A].velocity[j]);
                         if(hooke_vector[k]<2&&hooke_vector[k]==j)
                         {
                             //if(!j)cout<<p[A].pos[j]-p[B].pos[j]<<" hooke: "<<hooke(p[A].pos[j],p[B].pos[j],type)<<" "<<damping<<endl;
-                            p[i].F[j]=-1*(hooke(p[B].pos[j]-p[A].pos[j])+damping);
+                            p[i].F[j]=hooke(p[B].pos[j]-p[A].pos[j])+damp[j];
                             //if(B==1&&j)cout<<(abs(p[A].pos[j]-p[B].pos[j])-L01)<<" "<<hooke(p[A].pos[j], p[B].pos[j],type)<<endl;
                         }
                         else if(hooke_vector[k]>=2)
                         {
-                            p[i].F[j]=-1*(hooke(p[A].pos[j],p[B].pos[j])+damping);
+                            p[i].F[j]=hooke(p[B].pos[j]-p[A].pos[j])+damp[j];
                         }
                     
                     }
@@ -264,7 +267,7 @@ void spring_mass_model()
                     l=k;
                 }
             }
-            change_velocity(i,line[lebal][l][0],line[lebal][l][1],min,0);
+            change_velocity(i,line[lebal][l][0],line[lebal][l][1],min);
             for(int j=0;j<2;j++)p[i].F[j]=0;
         }
         else p[i].update();
@@ -275,13 +278,13 @@ void spring_mass_model()
 }
 int main()
 {
-    //circle.setRadius(radius*20);
+    //circle.setRadius(radius*10);
     //circle.setFillColor(Color::White);
     for(int i=0;i<particle_amount;i++)
     {
         p[i].mask(i);
         p[i].pos[0]=pixel/20+i%wid*r;
-        p[i].pos[1]=pixel/20+i/wid*r;
+        p[i].pos[1]=0+i/wid*r;
     }
     create_obstacle();
     /*
