@@ -7,7 +7,7 @@
 using namespace std;
 //using namespace sf;
 const int pixel=1500,wid=2,height=2,particle_amount=wid*height,mask[9][8]={{0,0,0,1,1,1,0,0},{0,1,1,1,0,0,0,0},{0,0,0,0,0,1,1,1},{1,1,0,0,0,0,0,1},{0,1,1,1,1,1,0,0},{0,0,0,1,1,1,1,1},{1,1,1,1,0,0,0,1},{1,1,0,0,0,1,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={160/*改變x為最大值*/,163},hooke_vector[8]={2,0,2,1,2,0,2,1},ob_num=4,wid_wall=500;
-const double delta_t=0.01,g=-9.8,radius=1.5,r=5.0,L0=r,damp1=0.5,Mass=0.1,ks=1.5,kd=sqrt(4*Mass*ks);
+const double delta_t=0.001,g=-5,radius=1.5,r=7.5,L0=r,damp1=0.4,Mass=0.1,ks=100,kd=sqrt(4*Mass*ks);
 double damp[2];
 
 //RenderWindow window(VideoMode(pixel, pixel), "Fluid Simulation");
@@ -60,8 +60,8 @@ void draw_line(int point1,int point2)
     /*
     Vertex line[] =
     {
-        Vertex(Vector2f((p[point1].pos[0]+radius)*10,pixel-(p[point1].pos[1]+radius)*10-50)),
-        Vertex(Vector2f((p[point2].pos[0]+radius)*10,pixel-(p[point2].pos[1]+radius)*10-50))
+        Vertex(Vector2f((p[point1].pos[0]+radius)*10,pixel-(p[point1].pos[1]-radius)*10-50)),
+        Vertex(Vector2f((p[point2].pos[0]+radius)*10,pixel-(p[point2].pos[1]-radius)*10-50))
     };
     window.draw(line, 2, sf::Lines);
     */
@@ -175,10 +175,11 @@ int collision(int point)
 }
 double hooke(double difference)
 {
-    int differ;
+    int differ,v;
     differ=(abs(difference)-L0>0)?1:-1;
+    v=(difference>0)?1:-1;
     
-    return ks*(abs(difference)-L0)*differ;
+    return ks*abs((abs(difference)-L0))*differ*v;
 }
 void ob_line(int x1,int y1,int x2,int y2,int lebal,int line_num)
 {
@@ -228,7 +229,8 @@ void spring_mass_model()
                 {
                     for(int j=0;j<2;j++)
                     {
-                        //damp[j]=-1*kd*(p[A].velocity[j]);
+                        damp[j]=-1*kd*(p[A].velocity[j]);
+                        damp[j]=0;
                         if(hooke_vector[k]<2&&hooke_vector[k]==j)
                         {
                             //if(!j)cout<<p[A].pos[j]-p[B].pos[j]<<" hooke: "<<hooke(p[A].pos[j],p[B].pos[j],type)<<" "<<damping<<endl;
@@ -273,8 +275,8 @@ void spring_mass_model()
         else p[i].update();
         draw(i);
     }
-    cout<<"F:"<<p[0].F[1]<<" "<<p[0].F[0]<<" "<<p[1].F[1]<<" "<<p[1].F[0]<<endl;
-    cout<<p[0].pos[1]<<" "<<p[0].pos[0]<<" "<<p[1].pos[1]<<" "<<p[1].pos[0]<<endl;
+    //cout<<"F:"<<p[0].F[1]<<" "<<p[0].F[0]<<" "<<p[1].F[1]<<" "<<p[1].F[0]<<endl;
+    //cout<<p[0].pos[1]<<" "<<p[0].pos[0]<<" "<<p[1].pos[1]<<" "<<p[1].pos[0]<<endl;
 }
 int main()
 {
@@ -299,7 +301,7 @@ int main()
                 window.close();
             }
         }
-        usleep(0);
+        usleep(1000);
         window.clear(Color::Black);
         spring_mass_model();
         window.display();
