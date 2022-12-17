@@ -6,7 +6,7 @@
 #include <SFML/Graphics.hpp>
 using namespace std;
 using namespace sf;
-const int pixel=1500,wid=10,height=10,particle_amount=wid*height,mask[9][8]={{0,0,0,1,1,1,0,0},{0,1,1,1,0,0,0,0},{0,0,0,0,0,1,1,1},{1,1,0,0,0,0,0,1},{0,1,1,1,1,1,0,0},{0,0,0,1,1,1,1,1},{1,1,1,1,0,0,0,1},{1,1,0,0,0,1,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={160/*改變x為最大值*/,163},hooke_vector[8]={2,0,2,1,2,0,2,1},ob_num=4,wid_wall=500;
+const int pixel=1500,wid=10,height=10,particle_amount=wid*height,mask[9][8]={{0,0,0,1,1,1,0,0},{0,1,1,1,0,0,0,0},{0,0,0,0,0,1,1,1},{1,1,0,0,0,0,0,1},{0,1,1,1,1,1,0,0},{0,0,0,1,1,1,1,1},{1,1,1,1,0,0,0,1},{1,1,0,0,0,1,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={160/*改變x為最大值*/,163},hooke_vector[8]={2,0,2,1,2,0,2,1},ob_num=4,wid_wall=500,,d_radius=10,d_bias=50;
 const double delta_t=0.001,g=-10,radius=1,r=7,L0=r,damp1=1,Mass=10,ks=500,kd=0.02*sqrt(4*Mass*ks),bias=0.5;
 double damp[2];
 
@@ -54,7 +54,7 @@ particle p[particle_amount];
 int line[ob_num+1][4][7];
 void draw(int point)
 {
-    circle.setPosition(p[point].pos[0]*10,pixel-p[point].pos[1]*10-50);
+    circle.setPosition(p[point].pos[0]*10,pixel-p[point].pos[1]*10-d_bias);
     window.draw(circle);
 }
 void draw_line(int point1,int point2)
@@ -62,8 +62,8 @@ void draw_line(int point1,int point2)
     
     Vertex line[] =
     {
-        Vertex(Vector2f((p[point1].pos[0]+radius)*10,pixel-(p[point1].pos[1]-radius)*10-50)),
-        Vertex(Vector2f((p[point2].pos[0]+radius)*10,pixel-(p[point2].pos[1]-radius)*10-50))
+        Vertex(Vector2f((p[point1].pos[0]+radius)*10,pixel-(p[point1].pos[1]-radius)*10-d_bias)),
+        Vertex(Vector2f((p[point2].pos[0]+radius)*10,pixel-(p[point2].pos[1]-radius)*10-d_bias))
     };
     window.draw(line, 2, sf::Lines);
     
@@ -72,7 +72,7 @@ void draw_rect(int posa1,int posa2,int posb1,int posb2)
 {
     rect.setFillColor(Color::White);
     rect.setSize(Vector2f(abs(posa1-posb1)*10,abs(posa2-posb2)*10));
-    rect.setPosition(Vector2f(posa1*10,pixel-posa2*10-50+10*2));
+    rect.setPosition(Vector2f(posa1*10,pixel-posa2*10-d_bias+d_radius*2));
     window.draw(rect);
     
 }
@@ -301,7 +301,7 @@ void spring_mass_model()
 }
 int main()
 {
-    circle.setRadius(10);
+    circle.setRadius(d_radius);
     circle.setFillColor(Color::White);
     for(int i=0;i<particle_amount;i++)
     {
