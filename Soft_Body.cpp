@@ -3,16 +3,16 @@
 #include <time.h>
 #include <vector>
 #include <unistd.h>
-#include <SFML/Graphics.hpp>
+//#include <SFML/Graphics.hpp>
 using namespace std;
-using namespace sf;
-const int pixel=1500,wid=10,height=10,particle_amount=wid*height,mask[9][8]={{0,0,0,1,1,1,0,0},{0,1,1,1,0,0,0,0},{0,0,0,0,0,1,1,1},{1,1,0,0,0,0,0,1},{0,1,1,1,1,1,0,0},{0,0,0,1,1,1,1,1},{1,1,1,1,0,0,0,1},{1,1,0,0,0,1,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={160/*改變x為最大值*/,163},hooke_vector[8]={2,0,2,1,2,0,2,1},ob_num=4,wid_wall=500,d_radius=10,d_bias=50;
-const double delta_t=0.001,g=-10,radius=1,r=7,L0=r,damp1=1,Mass=10,ks=500,kd=0.02*sqrt(4*Mass*ks),bias=0.5;
+//using namespace sf;
+const int pixel=1500,wid=5,height=5,particle_amount=wid*height,mask[9][8]={{0,0,0,1,1,1,0,0},{0,1,1,1,0,0,0,0},{0,0,0,0,0,1,1,1},{1,1,0,0,0,0,0,1},{0,1,1,1,1,1,0,0},{0,0,0,1,1,1,1,1},{1,1,1,1,0,0,0,1},{1,1,0,0,0,1,1,1},{1,1,1,1,1,1,1,1}},mask_pos[8][2]={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}},ray_start_point[2]={-500/*改變x為最大值*/,163},hooke_vector[8]={2,0,2,1,2,0,2,1},ob_num=4,wid_wall=500,d_radius=10,d_bias=50;
+const double delta_t=0.001,g=-10,radius=1,r=7,L0=r,damp1=1,Mass=1,ks=100,kd=0.02*sqrt(4*Mass*ks),bias=0.5;
 double damp[2];
 
-RenderWindow window(VideoMode(pixel, pixel), "Fluid Simulation");
+/*RenderWindow window(VideoMode(pixel, pixel), "Fluid Simulation");
 CircleShape circle;
-RectangleShape rect;
+RectangleShape rect;*/
 class particle
 {
     public:
@@ -58,27 +58,27 @@ particle p[particle_amount];
 int line[ob_num+1][4][7];
 void draw(int point)
 {
-    circle.setPosition(p[point].pos[0]*10,pixel-p[point].pos[1]*10-d_bias);
-    window.draw(circle);
+    //circle.setPosition(p[point].pos[0]*10,pixel-p[point].pos[1]*10-bias);
+    //window.draw(circle);
 }
 void draw_line(int point1,int point2)
 {
-    
+    /*
     Vertex line[] =
     {
-        Vertex(Vector2f((p[point1].pos[0]+radius)*10,pixel-(p[point1].pos[1]-radius)*10-d_bias)),
-        Vertex(Vector2f((p[point2].pos[0]+radius)*10,pixel-(p[point2].pos[1]-radius)*10-d_bias))
+        Vertex(Vector2f((p[point1].pos[0]+radius)*10,pixel-(p[point1].pos[1]-radius)*10-bias)),
+        Vertex(Vector2f((p[point2].pos[0]+radius)*10,pixel-(p[point2].pos[1]-radius)*10-bias))
     };
     window.draw(line, 2, sf::Lines);
-    
+    */
 }
 void draw_rect(int posa1,int posa2,int posb1,int posb2)
-{
+{/*
     rect.setFillColor(Color::White);
     rect.setSize(Vector2f(abs(posa1-posb1)*10,abs(posa2-posb2)*10));
-    rect.setPosition(Vector2f(posa1*10,pixel-posa2*10-d_bias+d_radius*2));
+    rect.setPosition(Vector2f(posa1*10,pixel-posa2*10-bias+d_radius*2));
     window.draw(rect);
-    
+    */
 }
 double dis(int A,int B)
 {
@@ -153,11 +153,11 @@ int collision(int point)
                 //if(point==1&&i==1)cout<<" "<<x1<<" "<<x2<<" "<<" "<<x1-x2<<" "<<" "<<l_y<<p[point].pos[1]<<endl;
                 //if(i==1)cout<<i<<" "<<k<<" "<<ansa<<" "<<ansb<<" "<<p[point].pos[1]<<endl;
             }
-            
             float rate=(y1-ansb)/(y1-p[point].pos[1]),rate2=(ansb-line[i][k][3])/(line[i][k][4]),rate3=(ansa-line[i][k][5])/(line[i][k][6]);
             //if(y1=p[point].pos[1])rate=1;
             if(!line[i][k][4])rate2=-1;
             if(!line[i][k][6])rate3=-1;
+            //if(i==4&&point==1&&k==1)cout<<rate<<" "<<rate2<<" "<<rate3<<" "<<ansa<<" "<<ansb<<endl;
             if(delta!=0)
             {
                 //cout<<rate3<<" "<<rate2<<" "<<rate<<endl;
@@ -173,7 +173,6 @@ int collision(int point)
                 }
             }
         }
-        //if(i==1&&point==1)cout<<p[point].pos[1]<<" "<<count_ob[i]<<endl;
     }
     
     
@@ -202,8 +201,8 @@ void ob_line(int x1,int y1,int x2,int y2,int lebal,int line_num)
     line[lebal][line_num-1][2]=x2*y1-x1*y2;
     line[lebal][line_num-1][3]=y1;
     line[lebal][line_num-1][4]=y2-y1;
-    line[lebal][line_num-1][3]=x1;
-    line[lebal][line_num-1][4]=x2-x1;
+    line[lebal][line_num-1][5]=x1;
+    line[lebal][line_num-1][6]=x2-x1;
     
     //法向量
 }
@@ -212,7 +211,7 @@ void draw_ob()
     draw_rect(0,0,149,-500);
     draw_rect(4,149,0,0);
     draw_rect(0,149,149,149-4);
-    draw_rect(149-4,149,149,0);
+    draw_rect(149,149,149+500,0);
 }
 void create_obstacle()
 {
@@ -231,12 +230,12 @@ void create_obstacle()
     ob_line(0,149-4,149,149-4,3,3);
     ob_line(149,149-4+1,149,148,3,4);
     
-    ob_line(149-4+1,149,148,149,4,1);
-    ob_line(149-4,0,149-4,149,4,2);
-    ob_line(149-4+1,0,148,0,4,3);
-    ob_line(149,0,149,149,4,4);
-   
-
+    ob_line(149+1,149,149+wid_wall-1,149,4,1);
+    ob_line(149,0,149,149,4,2);
+    ob_line(149+1,0,149+wid_wall-1,0,4,3);
+    ob_line(149+wid_wall,0,149+wid_wall,149,4,4);
+    
+    
     
 }
 void spring_mass_model()
@@ -259,7 +258,7 @@ void spring_mass_model()
                             //if(!j)cout<<p[A].pos[j]-p[B].pos[j]<<" hooke: "<<hooke(p[A].pos[j],p[B].pos[j],type)<<" "<<damping<<endl;
                             p[i].F[j]+=hooke(p[B].pos[j]-p[A].pos[j]);
                             if(hooke(p[B].pos[j]-p[A].pos[j])>=bias)p[i].F[j]+=damp[j];
-                            //if(j)cout<<(abs(p[A].pos[j]-p[B].pos[j])-L01)<<" "<<hooke(p[A].pos[j], p[B].pos[j],type)<<endl;
+                            //if(B==1&&j)cout<<(abs(p[A].pos[j]-p[B].pos[j])-L01)<<" "<<hooke(p[A].pos[j], p[B].pos[j],type)<<endl;
                         }
                         else if(hooke_vector[k]>=2)
                         {
@@ -272,7 +271,7 @@ void spring_mass_model()
                 }
             }
         }
-        p[i].F[1]+=g*Mass;
+        p[i].F[1]+=g;
     }//F
     
     for(int i=0;i<particle_amount;i++)
@@ -301,20 +300,20 @@ void spring_mass_model()
         draw(i);
     }
     //cout<<"F:"<<p[0].F[1]<<" "<<p[0].F[0]<<" "<<p[1].F[1]<<" "<<p[1].F[0]<<endl;
-    //cout<<p[0].pos[1]<<" "<<p[0].pos[0]<<" "<<p[1].pos[1]<<" "<<p[1].pos[0]<<endl;
+    cout<<p[3].pos[1]<<" "<<p[3].pos[0]<<" "<<p[5].pos[1]<<" "<<p[1].pos[0]<<endl;
 }
 int main()
 {
-    circle.setRadius(d_radius);
-    circle.setFillColor(Color::White);
+    //circle.setRadius(d_radius/100);
+    //circle.setFillColor(Color::White);
     for(int i=0;i<particle_amount;i++)
     {
         p[i].mask(i);
         p[i].pos[0]=pixel/20+i%wid*r;
-        p[i].pos[1]=30+i/wid*r;
+        p[i].pos[1]=0+i/wid*r;
     }
     create_obstacle();
-    
+    /*
     while (window.isOpen())
     {
         Event event;
@@ -326,18 +325,17 @@ int main()
                 window.close();
             }
         }
-        usleep(50);
+        usleep(1000);
         window.clear(Color::Black);
         spring_mass_model();
         draw_ob();
         window.display();
     }
-    /*
+     */
     while(true)
     {
         usleep(10);
         spring_mass_model();
-    }*/
+    }
     return 0;
 }
-
