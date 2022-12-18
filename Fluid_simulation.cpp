@@ -186,7 +186,7 @@ void caculate()
         {
             value& temp=group[i].v[j];
             temp.a=temp.pressure+temp.velocity;
-            if(j)temp.a+=g;
+            if(j)temp.a+=g*m;
             temp.v+=temp.a;
             temp.pos+=temp.v*delta_t;
         }
