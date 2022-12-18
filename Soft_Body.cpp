@@ -19,6 +19,7 @@ class particle
         particle();
         double pos[2],F[2],mass,velocity[2];
         int mask_num;
+        bool constraint;
         void update();
         void mask(int i);
 };
@@ -27,15 +28,18 @@ particle::particle()
     velocity[0]=0;
     velocity[1]=0;
     mass=Mass;
+    constraint=false;
 }
 void particle::update()
 {
     for(int j=0;j<2;j++)
     {
-        //if(!j)cout<<F[j]<<endl;
-        velocity[j]+=F[j]/mass*delta_t;
-        pos[j]+=velocity[j]*delta_t;
-        F[j]=0;
+        if(!constraint)
+        {
+            velocity[j]+=F[j]/mass*delta_t;
+            pos[j]+=velocity[j]*delta_t;
+            F[j]=0;
+        }
     }
 }
 void particle::mask(int i)
