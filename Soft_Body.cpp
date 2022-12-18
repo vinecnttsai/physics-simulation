@@ -58,7 +58,7 @@ particle p[particle_amount];
 int line[ob_num+1][4][7];
 void draw(int point)
 {
-    //circle.setPosition(p[point].pos[0]*10,pixel-p[point].pos[1]*10-bias);
+    //circle.setPosition(p[point].pos[0]*10,pixel-p[point].pos[1]*10-d_bias);
     //window.draw(circle);
 }
 void draw_line(int point1,int point2)
@@ -66,8 +66,8 @@ void draw_line(int point1,int point2)
     /*
     Vertex line[] =
     {
-        Vertex(Vector2f((p[point1].pos[0]+radius)*10,pixel-(p[point1].pos[1]-radius)*10-bias)),
-        Vertex(Vector2f((p[point2].pos[0]+radius)*10,pixel-(p[point2].pos[1]-radius)*10-bias))
+        Vertex(Vector2f((p[point1].pos[0]+radius)*10,pixel-(p[point1].pos[1]-radius)*10-d_bias)),
+        Vertex(Vector2f((p[point2].pos[0]+radius)*10,pixel-(p[point2].pos[1]-radius)*10-d_bias))
     };
     window.draw(line, 2, sf::Lines);
     */
@@ -76,7 +76,7 @@ void draw_rect(int posa1,int posa2,int posb1,int posb2)
 {/*
     rect.setFillColor(Color::White);
     rect.setSize(Vector2f(abs(posa1-posb1)*10,abs(posa2-posb2)*10));
-    rect.setPosition(Vector2f(posa1*10,pixel-posa2*10-bias+d_radius*2));
+    rect.setPosition(Vector2f(posa1*10,pixel-posa2*10-d_bias+d_radius*2));
     window.draw(rect);
     */
 }
@@ -171,6 +171,7 @@ int collision(int point)
                     
                     //cout<<rate<<" "<<rate2<<endl;
                 }
+                
             }
         }
     }
@@ -208,10 +209,10 @@ void ob_line(int x1,int y1,int x2,int y2,int lebal,int line_num)
 }
 void draw_ob()
 {
-    draw_rect(0,0,149,-500);
-    draw_rect(4,149,0,0);
-    draw_rect(0,149,149,149-4);
-    draw_rect(149,149,149+500,0);
+    draw_rect(0,0,149,-wid_wall);
+    draw_rect(-wid_wall,149,0,0);
+    draw_rect(0,149+wid_wall,149,149);
+    draw_rect(149,149,149+wid_wall,0);
 }
 void create_obstacle()
 {
@@ -220,15 +221,15 @@ void create_obstacle()
     ob_line(0,-1*wid_wall+1,0,-1,1,3);
     ob_line(149,-1*wid_wall+1,149,-1,1,4);
     
-    ob_line(1,0,3,0,2,1);
-    ob_line(0,0,0,149,2,2);
-    ob_line(1,149,3,149,2,3);
-    ob_line(4,0,4,149,2,4);
+    ob_line(-wid_wall+1,0,-1,0,2,1);
+    ob_line(-wid_wall,0,-wid_wall,149,2,2);
+    ob_line(-wid_wall+1,149,-1,149,2,3);
+    ob_line(0,0,0,149,2,4);
     
-    ob_line(0,149,149,149,3,1);
-    ob_line(0,149-4+1,0,148,3,2);
-    ob_line(0,149-4,149,149-4,3,3);
-    ob_line(149,149-4+1,149,148,3,4);
+    ob_line(0,149+wid_wall,149,149+wid_wall,3,1);
+    ob_line(0,149+1,0,149+wid_wall-1,3,2);
+    ob_line(0,149,149,149,3,3);
+    ob_line(149,149+1,149,149+wid_wall-1,3,4);
     
     ob_line(149+1,149,149+wid_wall-1,149,4,1);
     ob_line(149,0,149,149,4,2);
@@ -271,7 +272,7 @@ void spring_mass_model()
                 }
             }
         }
-        p[i].F[1]+=g;
+        p[i].F[1]+=g*Mass;
     }//F
     
     for(int i=0;i<particle_amount;i++)
