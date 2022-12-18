@@ -103,6 +103,10 @@ void border()
         }
     }
 }
+double dis(int a,int b)
+{
+    return sqrt(pow(group[a].v[0].pos-group[b].v[0].pos,2)+pow(group[a].v[1].pos-group[b].v[1].pos,2));
+}
 void caculate()
 {
     range();
@@ -138,7 +142,7 @@ void caculate()
                 for(int j=0;j<2;j++)
                 {
                     value& temp=group[i].v[j],temp2=group[k].v[j];
-                    double r=abs(temp.pos-temp2.pos);
+                    double r=dis(i,k);
                     temp.pressure+=((temp.p+temp2.p)/(2*temp.rho*temp2.rho))*pow(H-r,2)*(temp.pos-temp2.pos);
                     if(r)temp.pressure/=r;
                     //else temp.pressure=0;
@@ -162,7 +166,7 @@ void caculate()
                 for(int j=0;j<2;j++)
                 {
                     value& temp=group[i].v[j],temp2=group[k].v[j];
-                    double r=abs(temp.pos-temp2.pos);
+                    double r=dis(i,k);
                     temp.velocity+=(temp2.v-temp.v)*(H-r);
                     if(temp.rho*temp2.rho)temp.velocity/=temp.rho*temp2.rho;
                     //else temp.velocity=0;
